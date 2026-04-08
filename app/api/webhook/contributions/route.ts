@@ -18,9 +18,19 @@ function hasChanges(existing: ContributionRecord, incoming: ContributionRecord):
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const records: ContributionRecord[] = Array.isArray(body) ? body : [body]
-  const results = []
+  let records: ContributionRecord[]
+  if (Array.isArray(body.bulk_records)) {
+    records = body.bulk_records
+  } else if (Array.isArray(body)) {
+    records = body
+  } else if (body.employee_id != null) {
+    records = [body]
+  } else {
+    return NextResponse.json({ success: false, message: 'No valid records found' }, { status: 400 })
+  }
+
   const now = new Date().toISOString()
+  let created = 0, updated = 0, unchanged = 0
 
   const existing: ContributionRecord[] = (await redis.get(KEYS.CONTRIBUTIONS)) || []
 
@@ -30,17 +40,17 @@ export async function POST(req: NextRequest) {
     if (idx >= 0) {
       if (hasChanges(existing[idx], record)) {
         existing[idx] = { ...record, _is_new: false, _is_updated: true, _created_at: existing[idx]._created_at, _updated_at: now }
-        results.push({ success: true, action: 'updated', key })
+        updated++
       } else {
         existing[idx] = { ...existing[idx], _is_new: false, _is_updated: false }
-        results.push({ success: true, action: 'unchanged', key })
+        unchanged++
       }
     } else {
       existing.push({ ...record, _is_new: true, _is_updated: false, _created_at: now, _updated_at: now })
-      results.push({ success: true, action: 'created', key })
+      created++
     }
   }
 
   await redis.set(KEYS.CONTRIBUTIONS, existing)
-  return NextResponse.json(results.length === 1 ? results[0] : results)
+  return NextResponse.json({ success: true, total: records.length, created, updated, unchanged })
 }
