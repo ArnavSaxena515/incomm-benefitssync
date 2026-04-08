@@ -9,8 +9,8 @@ export async function GET() {
     redis.get<ReconciliationRecord[]>(KEYS.RECONCILIATION),
   ])
 
-  const c = census || []
-  const cont = contributions || []
+  const c = (census || []).filter(r => r.employee_id != null)
+  const cont = (contributions || []).filter(r => r.employee_id != null)
   const recon = reconciliation || []
 
   const allTimestamps = [

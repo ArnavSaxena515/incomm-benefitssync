@@ -20,8 +20,8 @@ export async function GET() {
   ])
 
   return NextResponse.json({
-    census: sortRecords(census || []),
-    contributions: sortRecords(contributions || []),
+    census: sortRecords((census || []).filter(r => r.employee_id != null)),
+    contributions: sortRecords((contributions || []).filter(r => r.employee_id != null)),
     reconciliation: (reconciliation || []).sort((a, b) => {
       if (a._is_new && !b._is_new) return -1
       if (!a._is_new && b._is_new) return 1

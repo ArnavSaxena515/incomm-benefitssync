@@ -10,8 +10,8 @@ import { CensusRecord, ContributionRecord, ReconciliationRecord, StatsData } fro
 
 type Tab = 'census' | 'contributions' | 'reconciliation'
 
-function fmt$(n: number) {
-  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function fmt$(n: number | undefined | null) {
+  return '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
 function StatusBadge({ status }: { status: string }) {
