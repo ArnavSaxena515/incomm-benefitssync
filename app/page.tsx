@@ -73,7 +73,9 @@ export default function Dashboard() {
   }
 
   const rows = data[tab]
-  const columns = rows.length > 0 ? Object.keys(rows[0]) : []
+  const columns = rows.length > 0
+    ? [...new Set(rows.flatMap(r => Object.keys(r)))]
+    : []
 
   const filteredRows = rows.filter(r => {
     if (!search) return true
