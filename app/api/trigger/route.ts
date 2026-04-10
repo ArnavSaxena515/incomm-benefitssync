@@ -15,7 +15,7 @@ export async function POST() {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
         'linked_account_id': 'cobalt_test_user',
-        'slug': 'Coba-6128',
+        'slug': 'workday',
         'sync_execution': 'false',
       },
       body: JSON.stringify({}),
