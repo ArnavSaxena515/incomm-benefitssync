@@ -16,6 +16,7 @@ export async function POST() {
         'X-API-Key': apiKey,
         'linked_account_id': 'cobalt_test_user',
         'slug': 'workday',
+        'config_id': 'cobalt_test_user',
         'sync_execution': 'false',
       },
       body: JSON.stringify({}),
