@@ -6,6 +6,7 @@ export async function POST() {
     redis.del(KEYS.CENSUS),
     redis.del(KEYS.CONTRIBUTIONS),
     redis.del(KEYS.RECONCILIATION),
+    redis.del('census:latest'),
   ])
   return NextResponse.json({ success: true, message: 'All data cleared' })
 }
