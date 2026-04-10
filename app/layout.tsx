@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InComm BenefitsSync",
+  title: "Acme BenefitsSync",
   description: "Payroll-to-Benefits Pipeline · Powered by Refold",
 };
 

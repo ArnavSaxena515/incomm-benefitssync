@@ -91,7 +91,7 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col h-screen py-6 bg-[#1a1a2e] w-64 border-r border-white/[0.06] sticky top-0">
         <div className="px-6 mb-10">
-          <h1 className="font-black text-[#e2e0fc] text-xl tracking-tight">InComm BenefitsSync</h1>
+          <h1 className="font-black text-[#e2e0fc] text-xl tracking-tight">Acme BenefitsSync</h1>
           <p className="text-[10px] uppercase tracking-widest text-[#e6bdbb] mt-1 font-bold">Payroll-to-Benefits Pipeline</p>
         </div>
         <nav className="flex-1 space-y-1 px-3">
@@ -115,7 +115,7 @@ export default function Dashboard() {
         </nav>
         <div className="mt-auto px-3 pt-6 border-t border-white/[0.06] mx-3">
           <div className="flex items-center gap-3 px-4 py-2">
-            <div className="w-8 h-8 rounded bg-[#28283d] flex items-center justify-center text-[#e31937] font-black text-sm">IC</div>
+            <div className="w-8 h-8 rounded bg-[#28283d] flex items-center justify-center text-[#e31937] font-black text-sm">AC</div>
             <div>
               <p className="text-xs font-bold">Admin Portal</p>
               <p className="text-[10px] text-[#e6bdbb]">v2.4.0</p>
@@ -179,7 +179,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {!loading && isEmpty && (
+          {!loading && isEmpty && !syncing && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Activity size={48} className="text-[#e6bdbb] mb-4" />
               <h2 className="text-xl font-bold mb-2">No data yet</h2>
@@ -188,6 +188,14 @@ export default function Dashboard() {
                 className="flex items-center gap-2 px-6 py-2 bg-[#e31937] text-white font-bold rounded shadow-lg shadow-[#e31937]/20">
                 <Zap size={16} /> Trigger Sync
               </button>
+            </div>
+          )}
+
+          {!loading && isEmpty && syncing && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Loader2 size={48} className="animate-spin text-[#e31937] mb-4" />
+              <h2 className="text-xl font-bold mb-2">Syncing from Workday...</h2>
+              <p className="text-[#e6bdbb] text-sm">Waiting for data to arrive. Polling every 3 seconds.</p>
             </div>
           )}
 
