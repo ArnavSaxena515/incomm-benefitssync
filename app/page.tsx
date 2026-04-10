@@ -2,29 +2,44 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  Users, RefreshCw, Loader2, Trash2, Search, Zap, Clock, Activity
+  Users, CreditCard, ArrowUpDown, RefreshCw, Loader2, Trash2, Search, Zap, Clock, Activity
 } from 'lucide-react'
 
 type Row = Record<string, unknown>
+type Tab = 'census' | 'contributions' | 'reconciliation'
+
+const TAB_CONFIG: { id: Tab; label: string; icon: typeof Users; endpoint: string }[] = [
+  { id: 'census', label: 'Census', icon: Users, endpoint: '/api/census' },
+  { id: 'contributions', label: 'Contributions', icon: CreditCard, endpoint: '/api/contributions' },
+  { id: 'reconciliation', label: 'Reconciliation', icon: ArrowUpDown, endpoint: '/api/reconciliation' },
+]
+
+const TAB_TITLES: Record<Tab, string> = {
+  census: 'Census Management',
+  contributions: 'Contribution Records',
+  reconciliation: 'Reconciliation',
+}
 
 export default function Dashboard() {
-  const [rows, setRows] = useState<Row[]>([])
-  const [columns, setColumns] = useState<string[]>([])
+  const [tab, setTab] = useState<Tab>('census')
+  const [data, setData] = useState<Record<Tab, Row[]>>({ census: [], contributions: [], reconciliation: [] })
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [search, setSearch] = useState('')
   const [showReset, setShowReset] = useState(false)
-  const [lastFetch, setLastFetch] = useState<string>('')
+  const [lastFetch, setLastFetch] = useState('')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/census')
-      const data: Row[] = await res.json()
-      setRows(data)
-      if (data.length > 0) {
-        setColumns(Object.keys(data[0]))
-      }
+      const results = await Promise.all(
+        TAB_CONFIG.map(t => fetch(t.endpoint).then(r => r.json()))
+      )
+      setData({
+        census: results[0] || [],
+        contributions: results[1] || [],
+        reconciliation: results[2] || [],
+      })
       setLastFetch(new Date().toLocaleTimeString())
     } catch (e) {
       console.error('Failed to fetch:', e)
@@ -35,7 +50,6 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Poll every 3 seconds
   useEffect(() => {
     intervalRef.current = setInterval(fetchData, 3000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
@@ -55,9 +69,11 @@ export default function Dashboard() {
   const handleReset = async () => {
     await fetch('/api/reset', { method: 'POST' })
     setShowReset(false)
-    setRows([])
-    setColumns([])
+    setData({ census: [], contributions: [], reconciliation: [] })
   }
+
+  const rows = data[tab]
+  const columns = rows.length > 0 ? Object.keys(rows[0]) : []
 
   const filteredRows = rows.filter(r => {
     if (!search) return true
@@ -66,6 +82,9 @@ export default function Dashboard() {
   })
 
   const formatHeader = (key: string) => key.replace(/_/g, ' ')
+
+  const totalRecords = data.census.length + data.contributions.length + data.reconciliation.length
+  const isEmpty = totalRecords === 0
 
   return (
     <div className="flex min-h-screen">
@@ -76,13 +95,23 @@ export default function Dashboard() {
           <p className="text-[10px] uppercase tracking-widest text-[#e6bdbb] mt-1 font-bold">Payroll-to-Benefits Pipeline</p>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          <button className="flex items-center gap-3 px-4 py-3 w-full text-left transition-all rounded bg-[#28283d] text-[#ffb3b1] border-l-4 border-[#e31937]">
-            <Users size={18} />
-            <span className="text-sm font-bold">Census</span>
-            {rows.length > 0 && (
-              <span className="ml-auto text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full">{rows.length}</span>
-            )}
-          </button>
+          {TAB_CONFIG.map(item => (
+            <button
+              key={item.id}
+              onClick={() => { setTab(item.id); setSearch('') }}
+              className={`flex items-center gap-3 px-4 py-3 w-full text-left transition-all rounded ${
+                tab === item.id
+                  ? 'bg-[#28283d] text-[#ffb3b1] border-l-4 border-[#e31937]'
+                  : 'text-[#e6bdbb] hover:bg-[#1e1e32] border-l-4 border-transparent'
+              }`}
+            >
+              <item.icon size={18} />
+              <span className="text-sm font-bold">{item.label}</span>
+              {data[item.id].length > 0 && (
+                <span className="ml-auto text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full">{data[item.id].length}</span>
+              )}
+            </button>
+          ))}
         </nav>
         <div className="mt-auto px-3 pt-6 border-t border-white/[0.06] mx-3">
           <div className="flex items-center gap-3 px-4 py-2">
@@ -99,7 +128,7 @@ export default function Dashboard() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="flex justify-between items-center px-6 py-3 h-16 bg-[#111125] sticky top-0 z-50 border-b border-white/[0.06]">
           <div>
-            <span className="text-xl font-bold tracking-tight">Census Management</span>
+            <span className="text-xl font-bold tracking-tight">{TAB_TITLES[tab]}</span>
             <span className="block text-[10px] uppercase font-bold text-[#e6bdbb] tracking-widest">Powered by Refold</span>
           </div>
           <div className="flex items-center gap-3">
@@ -150,7 +179,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {!loading && rows.length === 0 && (
+          {!loading && isEmpty && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Activity size={48} className="text-[#e6bdbb] mb-4" />
               <h2 className="text-xl font-bold mb-2">No data yet</h2>
@@ -164,7 +193,6 @@ export default function Dashboard() {
 
           {!loading && rows.length > 0 && (
             <section className="space-y-4">
-              {/* Search */}
               <div className="flex items-center gap-4">
                 <div className="relative w-full md:w-96">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#e6bdbb]" />
@@ -177,7 +205,6 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              {/* Dynamic Table */}
               <div className="bg-[#1a1a2e] rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -209,8 +236,27 @@ export default function Dashboard() {
               </div>
             </section>
           )}
+
+          {!loading && !isEmpty && rows.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Activity size={48} className="text-[#e6bdbb] mb-4" />
+              <h2 className="text-lg font-bold mb-2">No {tab} data yet</h2>
+              <p className="text-[#e6bdbb] text-sm">Data will appear here when synced</p>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1a1a2e] flex justify-around items-center z-50 border-t border-white/[0.06]">
+        {TAB_CONFIG.map(item => (
+          <button key={item.id} onClick={() => { setTab(item.id); setSearch('') }}
+            className={`flex flex-col items-center gap-1 ${tab === item.id ? 'text-[#ffb3b1]' : 'text-[#e6bdbb]'}`}>
+            <item.icon size={20} />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* Reset Modal */}
       {showReset && (
